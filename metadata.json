@@ -1,0 +1,7 @@
+{
+  "name": "OpenFARS — Autonomous Research Operating System",
+  "description": "Full autonomous research operating system with 3D research office, multi-agent collaboration, evidence graph, and human decision checkpoints.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
