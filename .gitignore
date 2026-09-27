@@ -14,3 +14,5 @@ workspace/
 openfars.local.yaml
 .dsh-sessions/
 wandb_config.yml
+
+node_modules/
