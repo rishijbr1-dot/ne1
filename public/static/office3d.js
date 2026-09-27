@@ -14,11 +14,11 @@ const ROLE_COLORS = {
 };
 
 const STAGES = [
-  ["Direction", "director"], ["Literature", "librarian"], ["Explore", "explorer"],
-  ["Critique", "critic"], ["Task", "task_designer"], ["Plan", "planner"],
-  ["Experiment", "experimenter"], ["Evaluate", "evaluator"],
-  ["Figures", "visualizer"], ["Paper", "writer"], ["Podcast", "podcaster"],
-  ["Video", "video_producer"], ["Release", "publisher"]
+  ["Producer", "director"], ["Research", "librarian"], ["Curriculum", "explorer"],
+  ["Fact check", "critic"], ["Story plan", "task_designer"], ["Script", "planner"],
+  ["Animation", "experimenter"], ["Review / QC", "evaluator"],
+  ["Storyboard", "visualizer"], ["Story writer", "writer"], ["Voice / music", "podcaster"],
+  ["Edit / video", "video_producer"], ["YouTube package", "publisher"]
 ];
 
 const DESKS = {
@@ -443,12 +443,12 @@ class Office3D {
     this.overlay = document.createElement("div");
     this.overlay.className = "room-overlay";
     this.overlay.innerHTML =
-      '<div class="task-hud" aria-label="Research workflow stages"><div class="task-hud-head">' +
-      '<span>RESEARCH TASK GRAPH</span><small>click any stage</small></div>' +
+      '<div class="task-hud" aria-label="Educational video production stages"><div class="task-hud-head">' +
+      '<span>VIDEO PRODUCTION TASK GRAPH</span><small>click any role</small></div>' +
       '<div class="task-track" role="group" aria-label="Agent stages"></div></div>' +
       '<div class="room-hint">drag to orbit · scroll to zoom · click a person</div>' +
       '<div class="room-performance">low-poly · 30 FPS cap</div>' +
-      '<div class="room-activity" role="status" aria-live="polite">The office view mirrors durable research state.</div>';
+      '<div class="room-activity" role="status" aria-live="polite">The office view mirrors production handoffs.</div>';
     this.container.appendChild(this.overlay);
     this.taskTrack = this.overlay.querySelector(".task-track");
     this.activity = this.overlay.querySelector(".room-activity");

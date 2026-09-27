@@ -113,27 +113,102 @@ const AGENT_PROFILES: Record<string, AgentProfile> = {
   },
 };
 
-const ACTIVE_AGENT_BY_STAGE: Record<string, string> = {
-  created: "director",
-  direction_ready: "librarian",
-  literature_ready: "explorer",
-  revising_ideas: "explorer",
-  ideas_ready: "critic",
-  waiting_idea: "critic",
-  idea_approved: "task_designer",
-  task_ready: "planner",
-  plan_ready: "experimenter",
-  experimenting: "experimenter",
-  results_approved: "visualizer",
-  visualization_ready: "writer",
-  paper_ready: "podcaster",
-  podcast_ready: "video_producer",
-  media_ready: "publisher",
-  release_ready: "publisher",
+
+const app = express();
+
+app.use(express.json({ limit: "2mb" }));
+
+function getParam(val: string | string[] | undefined): string {
+  if (Array.isArray(val)) return val[0] || "";
+  return val || "";
+}
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Permissions-Policy", "camera=(), geolocation=(), microphone=()");
+  next();
+});
+
+app.use("/static", express.static(path.join(__dirname, "public/static"), { maxAge: "1h" }));
+interface WorkflowStep {
+  stage: string;
+  nextStage: string;
+  agent: string;
+  label: string;
+  summary: string;
+  supportAgents?: Array<{ agent: string; label: string; summary: string }>;
+  deliverable?: string;
+}
+
+const PRODUCTION_WORKFLOW: WorkflowStep[] = [
+  { stage: "created", nextStage: "research_ready", agent: "director", label: "Producer / Showrunner", summary: "Production kickoff is set: episode scope, learning goal, department handoffs, and approval checkpoints are organized." },
+  { stage: "research_ready", nextStage: "curriculum_ready", agent: "librarian", label: "Research Agent", summary: "Collected reliable, age-appropriate source material for the educational topic." },
+  { stage: "curriculum_ready", nextStage: "fact_check_ready", agent: "explorer", label: "Curriculum Agent", summary: "Defined age-appropriate learning objectives, explanations, examples, and lesson structure." },
+  { stage: "fact_check_ready", nextStage: "education_review_ready", agent: "critic", label: "Fact Checker", summary: "Checked factual accuracy and flagged misleading or unsuitable educational claims." },
+  { stage: "education_review_ready", nextStage: "story_ready", agent: "evaluator", label: "Educational Reviewer", summary: "Reviewed the learning plan for children's age suitability, clarity, safety, and educational value." },
+  { stage: "story_ready", nextStage: "script_ready", agent: "task_designer", label: "Story Architect", summary: "Turned the approved learning objective into an original story concept, characters, scenes, and narrative structure." },
+  { stage: "script_ready", nextStage: "storyboard_ready", agent: "planner", label: "Script Director", summary: "Built the detailed scene order, dialogue plan, narration, and pacing.", supportAgents: [{ agent: "writer", label: "Story Writer", summary: "Drafted child-friendly story narration and character dialogue from the approved educational plan." }], deliverable: "script" },
+  { stage: "storyboard_ready", nextStage: "animation_ready", agent: "visualizer", label: "Creative Director", summary: "Designed storyboard shots, characters, environments, visual style, and scene composition.", deliverable: "storyboard" },
+  { stage: "animation_ready", nextStage: "audio_ready", agent: "experimenter", label: "Animation Director", summary: "Planned scene motion, character actions, camera direction, and animation requirements." },
+  { stage: "audio_ready", nextStage: "edit_ready", agent: "podcaster", label: "Voice & Music Director", summary: "Planned narration, character voices, background music, ambience, and sound effects.", deliverable: "audio" },
+  { stage: "edit_ready", nextStage: "qc_ready", agent: "video_producer", label: "Editor & Video Producer", summary: "Assembled the scene, audio, captions, transitions, and final video edit plan.", deliverable: "video_edit" },
+  { stage: "qc_ready", nextStage: "thumbnail_ready", agent: "evaluator", label: "Production QC", summary: "Reviewed the episode package, identified production issues, and recorded required revisions." },
+  { stage: "thumbnail_ready", nextStage: "release_ready", agent: "publisher", label: "YouTube & Thumbnail Director", summary: "Prepared the thumbnail concept, title, description, chapters, SEO metadata, and Shorts opportunities.", deliverable: "thumbnail" },
+  { stage: "release_ready", nextStage: "complete", agent: "publisher", label: "YouTube & Thumbnail Director", summary: "Completed the offline YouTube publishing package and release checklist; no external upload was performed.", deliverable: "release" },
+];
+
+const LEGACY_RESEARCH_WORKFLOW: WorkflowStep[] = [
+  { stage: "created", nextStage: "direction_ready", agent: "director", label: "Director", summary: "Refined charter and formalized core falsifiable inquiry." },
+  { stage: "direction_ready", nextStage: "literature_ready", agent: "librarian", label: "Librarian", summary: "Indexed and grounded 38 relevant preprints and established empirical benchmarks." },
+  { stage: "literature_ready", nextStage: "ideas_ready", agent: "explorer", label: "Explorer", summary: "Formulated divergent, high-leverage research hypotheses with concrete falsifiers." },
+  { stage: "ideas_ready", nextStage: "waiting_idea", agent: "critic", label: "Critic", summary: "Audited candidates; constructed human decision packet at idea checkpoint." },
+  { stage: "idea_approved", nextStage: "task_ready", agent: "task_designer", label: "Task Designer", summary: "Translated selected idea into an executable measurement task." },
+  { stage: "task_ready", nextStage: "plan_ready", agent: "planner", label: "Planner", summary: "Preregistered experiment protocol, seeds, controls, and stop criteria." },
+  { stage: "plan_ready", nextStage: "results_approved", agent: "experimenter", label: "Experimenter", summary: "Executed experimental harness, logged runs, and preserved telemetry." },
+  { stage: "results_approved", nextStage: "visualization_ready", agent: "visualizer", label: "Visualizer", summary: "Generated declarative charts and data-linked visualizations." },
+  { stage: "visualization_ready", nextStage: "paper_ready", agent: "writer", label: "Writer", summary: "Synthesized evidence ledger into publication-ready draft." },
+  { stage: "paper_ready", nextStage: "podcast_ready", agent: "podcaster", label: "Podcaster", summary: "Produced research dialogue podcast audio transcript and notes." },
+  { stage: "podcast_ready", nextStage: "media_ready", agent: "video_producer", label: "Video Producer", summary: "Rendered source-linked visual slides and video storyboard." },
+  { stage: "media_ready", nextStage: "complete", agent: "publisher", label: "Publisher", summary: "Packaged release bundle, validated digests, and finalized artifacts." },
+];
+
+const ACTIVE_AGENTS_BY_STAGE: Record<string, string[]> = {
+  created: ["director"],
+  research_ready: ["librarian"],
+  curriculum_ready: ["explorer"],
+  fact_check_ready: ["critic"],
+  education_review_ready: ["evaluator"],
+  story_ready: ["task_designer"],
+  script_ready: ["planner", "writer"],
+  storyboard_ready: ["visualizer"],
+  animation_ready: ["experimenter"],
+  audio_ready: ["podcaster"],
+  edit_ready: ["video_producer"],
+  qc_ready: ["evaluator"],
+  thumbnail_ready: ["publisher"],
+  release_ready: ["publisher"],
+  direction_ready: ["librarian"],
+  literature_ready: ["explorer"],
+  revising_ideas: ["explorer"],
+  ideas_ready: ["critic"],
+  waiting_idea: ["critic"],
+  idea_approved: ["task_designer"],
+  task_ready: ["planner"],
+  plan_ready: ["experimenter"],
+  experimenting: ["experimenter"],
+  results_approved: ["visualizer"],
+  visualization_ready: ["writer"],
+  paper_ready: ["podcaster"],
+  podcast_ready: ["video_producer"],
+  media_ready: ["publisher"],
 };
 
 interface Handoff {
   agent: string;
+  agent_label?: string;
+  next_agent?: string;
+  next_agent_label?: string;
   summary: string;
   time: string;
   artifacts?: Array<{ path: string; bytes: number }>;
@@ -211,7 +286,7 @@ function broadcastEvent(project: ProjectData, eventType: string, data: Record<st
 function computeAgentRoster(project: ProjectData) {
   const stage = project.state.stage;
   const running = project.running;
-  const activeAgent = ACTIVE_AGENT_BY_STAGE[stage];
+  const activeAgents = ACTIVE_AGENTS_BY_STAGE[stage] || [];
 
   return Object.values(AGENT_PROFILES).map((profile, index) => {
     const ownHandoffs = project.handoffs.filter((h) => h.agent === profile.name);
@@ -220,11 +295,11 @@ function computeAgentRoster(project: ProjectData) {
     let status = "queued";
     if (stage === "rejected") {
       status = "stopped";
-    } else if (running && profile.name === activeAgent) {
+    } else if (running && activeAgents.includes(profile.name)) {
       status = "working";
     } else if (ownHandoffs.length > 0) {
       status = "done";
-    } else if (profile.name === activeAgent) {
+    } else if (activeAgents.includes(profile.name)) {
       status = "ready";
     }
 
@@ -260,6 +335,23 @@ function computeAgentRoster(project: ProjectData) {
       latest_handoff: latestHandoff,
     };
   });
+}
+
+function createProductionBrief(title: string, objective: string, targetAge: string, storyConcept: string) {
+  return {
+    title,
+    educational_objective: objective,
+    target_age: targetAge,
+    story_concept: storyConcept,
+    deliverables: {
+      script: { label: "Script", status: "Not started" },
+      storyboard: { label: "Storyboard", status: "Not started" },
+      audio: { label: "Audio", status: "Not started" },
+      video_edit: { label: "Video / edit", status: "Not started" },
+      thumbnail: { label: "Thumbnail", status: "Not started" },
+      release: { label: "Release", status: "Not started" },
+    },
+  };
 }
 
 function seedInitialProjects() {
@@ -498,29 +590,53 @@ The Explorer agent proposed three falsifiable research avenues. The Critic audit
 
   projects.set(p1.project_id, p1);
   projects.set(p2.project_id, p2);
+
+  const rainbow: ProjectData = {
+    project_id: "rainbow-formation-episode",
+    state: {
+      stage: "created",
+      topics: ["How Does a Rainbow Form?"],
+      human_feedback: {},
+    },
+    manifest: {
+      version: "0.2.0",
+      created_at: new Date().toISOString(),
+      production: createProductionBrief(
+        "How Does a Rainbow Form?",
+        "Explain how sunlight entering water droplets is refracted, reflected, and separated into the colors of a rainbow.",
+        "Ages 6-8",
+        "Two curious friends follow a sunbeam through a garden after the rain and discover how tiny water droplets spread white sunlight into a colorful arc.",
+      ),
+    },
+    running: false,
+    updated_at: Date.now(),
+    pending_decisions: [],
+    handoffs: [],
+    events: [
+      { seq: 1, type: "project.created", time: new Date().toISOString(), data: { project_id: "rainbow-formation-episode", topics: ["How Does a Rainbow Form?"] } },
+    ],
+    artifacts: new Map(),
+    chats: {},
+    eventListeners: new Set(),
+  };
+
+  projects.set(rainbow.project_id, rainbow);
 }
 
 seedInitialProjects();
+
+function updateProductionDeliverable(project: ProjectData, key: string, status: string) {
+  const deliverable = project.manifest.production?.deliverables?.[key];
+  if (!deliverable) return;
+  deliverable.status = status;
+  broadcastEvent(project, "production.status", { deliverable: key, status });
+}
 
 // Pipeline simulation runner for newly created or resumed projects
 function runProjectPipeline(project: ProjectData) {
   if (project.running) return;
   project.running = true;
-
-  const sequence = [
-    { stage: "created", nextStage: "direction_ready", agent: "director", summary: "Refined charter and formalized core falsifiable inquiry." },
-    { stage: "direction_ready", nextStage: "literature_ready", agent: "librarian", summary: "Indexed and grounded 38 relevant preprints and established empirical benchmarks." },
-    { stage: "literature_ready", nextStage: "ideas_ready", agent: "explorer", summary: "Formulated divergent, high-leverage research hypotheses with concrete falsifiers." },
-    { stage: "ideas_ready", nextStage: "waiting_idea", agent: "critic", summary: "Audited candidates; constructed human decision packet at idea checkpoint." },
-    { stage: "idea_approved", nextStage: "task_ready", agent: "task_designer", summary: "Translated selected idea into an executable measurement task." },
-    { stage: "task_ready", nextStage: "plan_ready", agent: "planner", summary: "Preregistered experiment protocol, seeds, controls, and stop criteria." },
-    { stage: "plan_ready", nextStage: "results_approved", agent: "experimenter", summary: "Executed experimental harness, logged runs, and preserved telemetry." },
-    { stage: "results_approved", nextStage: "visualization_ready", agent: "visualizer", summary: "Generated declarative charts and data-linked visualizations." },
-    { stage: "visualization_ready", nextStage: "paper_ready", agent: "writer", summary: "Synthesized evidence ledger into publication-ready draft." },
-    { stage: "paper_ready", nextStage: "podcast_ready", agent: "podcaster", summary: "Produced research dialogue podcast audio transcript and notes." },
-    { stage: "podcast_ready", nextStage: "media_ready", agent: "video_producer", summary: "Rendered source-linked visual slides and video storyboard." },
-    { stage: "media_ready", nextStage: "complete", agent: "publisher", summary: "Packaged release bundle, validated digests, and finalized artifacts." },
-  ];
+  const sequence = project.manifest.production ? PRODUCTION_WORKFLOW : LEGACY_RESEARCH_WORKFLOW;
 
   async function step() {
     if (!project.running) return;
@@ -531,7 +647,7 @@ function runProjectPipeline(project: ProjectData) {
       return;
     }
 
-    let stepInfo = sequence.find((s) => s.stage === currentStage);
+    let stepInfo = sequence.find((candidate) => candidate.stage === currentStage);
     if (!stepInfo) {
       if (currentStage === "complete" || currentStage === "rejected") {
         project.running = false;
@@ -540,36 +656,52 @@ function runProjectPipeline(project: ProjectData) {
       stepInfo = sequence[0];
     }
 
-    const { agent, nextStage, summary } = stepInfo;
+    const participants = [
+      { agent: stepInfo.agent, label: stepInfo.label, summary: stepInfo.summary },
+      ...(stepInfo.supportAgents || []),
+    ];
+    const nextStep = sequence.find((candidate) => candidate.stage === stepInfo.nextStage);
+    if (stepInfo.deliverable) updateProductionDeliverable(project, stepInfo.deliverable, "In progress");
+    for (const participant of participants) {
+      broadcastEvent(project, "agent.lifecycle", { agent: participant.agent, phase: "start" });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1200));
 
-    broadcastEvent(project, "agent.lifecycle", { agent, phase: "start" });
-    await new Promise((r) => setTimeout(r, 1200));
+    for (const participant of participants) {
+      const artifactPath = project.manifest.production
+        ? `production/${currentStage}-${participant.agent}.md`
+        : `artifacts/${participant.agent}_output.md`;
+      const production = project.manifest.production;
+      const artifactContent = production
+        ? `# ${production.title} - ${participant.label}\n\n${participant.summary}\n\n**Educational objective:** ${production.educational_objective}\n**Target age:** ${production.target_age}\n**Project:** ${project.project_id}\n**Timestamp:** ${new Date().toISOString()}\n`
+        : `# Output from ${participant.agent}\n\n**Summary**: ${participant.summary}\n**Project**: ${project.project_id}\n**Timestamp**: ${new Date().toISOString()}\n`;
+      project.artifacts.set(artifactPath, {
+        path: artifactPath,
+        bytes: Buffer.byteLength(artifactContent),
+        mimeType: "text/markdown; charset=utf-8",
+        content: artifactContent,
+      });
 
-    const artifactPath = `artifacts/${agent}_output.md`;
-    const artifactContent = `# Output from ${agent}\n\n**Summary**: ${summary}\n**Project**: ${project.project_id}\n**Timestamp**: ${new Date().toISOString()}\n`;
-    project.artifacts.set(artifactPath, {
-      path: artifactPath,
-      bytes: Buffer.byteLength(artifactContent),
-      mimeType: "text/markdown; charset=utf-8",
-      content: artifactContent,
-    });
+      const handoff: Handoff = {
+        agent: participant.agent,
+        agent_label: participant.label,
+        next_agent: nextStep?.agent || (stepInfo.nextStage === "complete" ? "complete" : undefined),
+        next_agent_label: nextStep?.label || (stepInfo.nextStage === "complete" ? "Release ready" : undefined),
+        summary: participant.summary,
+        time: new Date().toISOString(),
+        artifacts: [{ path: artifactPath, bytes: Buffer.byteLength(artifactContent) }],
+        open_questions: [],
+      };
+      project.handoffs.push(handoff);
+      broadcastEvent(project, "agent.lifecycle", { agent: participant.agent, phase: "done" });
+      broadcastEvent(project, "agent.handoff", { agent: participant.agent, handoff });
+    }
 
-    const handoff: Handoff = {
-      agent,
-      summary,
-      time: new Date().toISOString(),
-      artifacts: [{ path: artifactPath, bytes: Buffer.byteLength(artifactContent) }],
-      open_questions: [],
-    };
-    project.handoffs.push(handoff);
-
-    broadcastEvent(project, "agent.lifecycle", { agent, phase: "done" });
-    broadcastEvent(project, "agent.handoff", { agent, handoff });
-
-    project.state.stage = nextStage;
+    if (stepInfo.deliverable) updateProductionDeliverable(project, stepInfo.deliverable, "Complete");
+    project.state.stage = stepInfo.nextStage;
     project.updated_at = Date.now();
 
-    if (nextStage === "waiting_idea") {
+    if (stepInfo.nextStage === "waiting_idea") {
       const pending = {
         checkpoint: "idea",
         request: {
@@ -590,7 +722,7 @@ function runProjectPipeline(project: ProjectData) {
       return;
     }
 
-    if (nextStage === "complete") {
+    if (stepInfo.nextStage === "complete") {
       project.running = false;
       broadcastEvent(project, "workflow.complete", { stage: "complete" });
       return;
@@ -604,27 +736,6 @@ function runProjectPipeline(project: ProjectData) {
     project.running = false;
   });
 }
-
-const app = express();
-
-app.use(express.json({ limit: "2mb" }));
-
-function getParam(val: string | string[] | undefined): string {
-  if (Array.isArray(val)) return val[0] || "";
-  return val || "";
-}
-
-// Security & Caching middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("Referrer-Policy", "no-referrer");
-  res.setHeader("Permissions-Policy", "camera=(), geolocation=(), microphone=()");
-  next();
-});
-
-// Static assets
-app.use("/static", express.static(path.join(__dirname, "public/static"), { maxAge: "1h" }));
-
 // Root page
 app.get(["/", "/index.html"], (req: Request, res: Response) => {
   res.setHeader("Cache-Control", "no-store");
@@ -675,6 +786,7 @@ app.get("/api/models", (req: Request, res: Response) => {
 app.get("/api/projects", (req: Request, res: Response) => {
   const list = Array.from(projects.values()).map((p) => ({
     project_id: p.project_id,
+    title: p.manifest.production?.title || p.project_id,
     stage: p.state.stage,
     topics: p.state.topics,
     running: p.running,
@@ -712,6 +824,12 @@ app.post("/api/projects", (req: Request, res: Response) => {
     manifest: {
       version: "0.2.0",
       created_at: new Date().toISOString(),
+      production: createProductionBrief(
+        topics.map(String).join(" / "),
+        topics.map(String).join("; "),
+        "To be selected",
+        "To be developed from the approved learning objective.",
+      ),
     },
     running: false,
     updated_at: Date.now(),

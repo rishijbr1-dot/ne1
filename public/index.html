@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark light">
-  <title>OpenFARS — Research Office</title>
-  <meta name="description" content="Full autonomous research operating system with 3D research office, multi-agent collaboration, evidence graph, and human decision checkpoints.">
-  <meta property="og:title" content="OpenFARS — Research Office">
-  <meta property="og:description" content="Full autonomous research operating system with 3D research office, multi-agent collaboration, evidence graph, and human decision checkpoints.">
+  <title>AI Kids Studio — Educational Production House</title>
+  <meta name="description" content="Offline-first AI kids educational video production house with a 3D production office, specialist agents, and durable creative handoffs.">
+  <meta property="og:title" content="AI Kids Studio — Educational Production House">
+  <meta property="og:description" content="Offline-first AI kids educational video production house with a 3D production office, specialist agents, and durable creative handoffs.">
   <style>
     :root {
       --bg: #08110f;
@@ -335,6 +335,24 @@
     }
     .metric strong { display: block; font-size: 17px; }
     .metric span { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .1em; }
+
+    .production-brief {
+      margin: 0 0 20px;
+      padding: 15px 0;
+      border-block: 1px solid var(--line);
+    }
+    .production-brief-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .production-brief h2 { margin: 0; font-size: 12px; }
+    .production-run { width: auto; flex: none; }
+    .production-facts { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(100px, .55fr) minmax(0, 1.5fr); gap: 18px; margin: 15px 0; }
+    .production-fact { min-width: 0; }
+    .production-fact b { color: var(--muted); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
+    .production-fact p { margin: 5px 0 0; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+    .production-deliverables { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+    .production-deliverable { min-width: 0; padding: 10px 8px 0 0; }
+    .production-deliverable b, .production-deliverable span { display: block; overflow-wrap: anywhere; }
+    .production-deliverable b { font-size: 10px; }
+    .production-deliverable span { margin-top: 4px; color: var(--muted); font-size: 9px; }
 
     .decision {
       margin-bottom: 16px;
@@ -973,6 +991,9 @@
       .registry { grid-column: 1 / -1; margin-top: 1px; }
       main { padding: 18px 13px 50px; }
       .operations, .decision-grid { grid-template-columns: 1fr; }
+      .production-facts { grid-template-columns: minmax(0, 1fr) minmax(100px, .55fr); }
+      .production-fact:last-child { grid-column: 1 / -1; }
+      .production-deliverables { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 10px; }
       .project-hero { display: block; }
       .project-metrics { margin-top: 15px; }
       .top-context { align-items: flex-start; flex-direction: column; gap: 6px; }
@@ -994,6 +1015,10 @@
       .metric { min-width: 0; }
       .metric strong { overflow-wrap: anywhere; font-size: 14px; }
       .office-header { padding: 17px; }
+      .production-brief-head { align-items: flex-start; flex-direction: column; }
+      .production-run { width: 100%; }
+      .production-facts { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .production-deliverables { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .office-header { display: block; }
       .room-tools { justify-content: space-between; margin-top: 13px; }
       .legend { justify-content: flex-start; }
@@ -1012,14 +1037,14 @@
   </style>
 </head>
 <body>
-  <a class="skip-link" href="#main-content">Skip to research workspace</a>
+  <a class="skip-link" href="#main-content">Skip to production workspace</a>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">Ø</div>
         <div><strong>AI KIDS STUDIO</strong><small>AI EDUCATIONAL PRODUCTION HOUSE</small></div>
       </div>
-      <button class="primary-button" id="new-project">＋ New research run</button>
+      <button class="primary-button" id="new-project">＋ New episode</button>
       <div class="side-label">Projects</div>
       <div id="project-list"></div>
       <div class="registry" id="model-registry">
@@ -1057,26 +1082,39 @@
       <section class="empty" id="empty">
         <div>
           <div class="empty-office"></div>
-          <div class="eyebrow">Your multi-model research team</div>
-          <h1>Open the research office.</h1>
-          <p>Give the team a direction. Then walk desk to desk, follow the evidence, and ask every specialist what is happening.</p>
-          <button class="primary-button" onclick="showModal()">Start a research run</button>
+          <div class="eyebrow">Your children's educational video team</div>
+          <h1>Open the production studio.</h1>
+          <p>Choose an educational topic, then follow its research, story, storyboard, audio, and release handoffs.</p>
+          <button class="primary-button" onclick="showModal()">Start an episode</button>
         </div>
       </section>
 
       <section class="hidden" id="dashboard" aria-busy="false">
         <header class="project-hero">
           <div>
-            <div class="eyebrow">Live research control plane · AI Research Office</div>
-            <h1 id="title">Research project</h1>
+            <div class="eyebrow">Children's educational video production · offline workflow</div>
+            <h1 id="title">Production project</h1>
             <div class="topics" id="topics"></div>
           </div>
           <div class="project-metrics">
-            <div class="metric"><strong id="completed-count">0/13</strong><span>desks done</span></div>
+            <div class="metric"><strong id="completed-count">0/13</strong><span>roles complete</span></div>
             <div class="metric"><strong id="active-count">0</strong><span>working</span></div>
             <div class="metric"><strong><span class="dot" id="running-dot"></span><span id="stage">created</span></strong><span>project stage</span></div>
           </div>
         </header>
+
+        <section class="production-brief hidden" id="production-brief" aria-label="Episode production brief">
+          <div class="production-brief-head">
+            <h2>Episode brief</h2>
+            <button class="primary-button production-run" id="run-production" onclick="runProduction()">Start offline production</button>
+          </div>
+          <div class="production-facts">
+            <div class="production-fact"><b>Educational objective</b><p id="production-objective"></p></div>
+            <div class="production-fact"><b>Target age</b><p id="production-age"></p></div>
+            <div class="production-fact"><b>Story concept</b><p id="production-story"></p></div>
+          </div>
+          <div class="production-deliverables" id="production-deliverables"></div>
+        </section>
 
         <section class="decision hidden" id="decision">
           <div class="decision-grid">
@@ -1100,9 +1138,9 @@
         <section class="office-scene">
           <header class="office-header">
             <div>
-              <div class="eyebrow">One room · thirteen researchers</div>
-              <h2>Live Research Room</h2>
-              <p>People work at their desks, move through the room, and meet when context changes hands.</p>
+              <div class="eyebrow">One room · thirteen production roles</div>
+              <h2>Live Production Room</h2>
+              <p>Agents work at their desks, move through the room, and meet when a production handoff occurs.</p>
             </div>
             <div class="room-tools">
               <div class="legend">
@@ -1115,7 +1153,7 @@
             </div>
           </header>
           <div class="room-viewport">
-            <div class="office-room" id="office-room" aria-label="Interactive OpenFARS research office">
+            <div class="office-room" id="office-room" aria-label="Interactive AI Kids Studio production office">
               <div class="room-loading" id="office-loading" role="status">
                 <b>Opening the 3D research room…</b>
                 <span>Loading the local renderer and agent state.</span>
@@ -1162,15 +1200,15 @@
 
   <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="new-run-title" aria-hidden="true">
     <form class="modal-box" id="new-project-form">
-      <h2 id="new-run-title">Start a research run</h2>
+      <h2 id="new-run-title">Start an episode</h2>
       <label for="project-id">Project ID</label>
       <input id="project-id" maxlength="128" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{0,127}" required autocomplete="off">
-      <label for="project-topics">Research direction (one topic per line)</label>
-      <textarea id="project-topics" maxlength="12000" required placeholder="Efficient sampling of non-obvious scientific hypotheses"></textarea>
+      <label for="project-topics">Educational topic or learning objective</label>
+      <textarea id="project-topics" maxlength="12000" required placeholder="How does a rainbow form?"></textarea>
       <p class="form-error" id="project-error" role="alert"></p>
       <div class="actions">
         <button class="ghost" type="button" onclick="hideModal()">Cancel</button>
-        <button class="approve" id="create-project" type="submit">Open the office</button>
+        <button class="approve" id="create-project" type="submit">Start production</button>
       </div>
     </form>
   </div>
@@ -1185,6 +1223,23 @@
     };
 
     const statusLabels = {working:"working",done:"handoff ready",ready:"ready",queued:"queued",error:"needs attention",stopped:"stopped"};
+    const agentLabels = {
+      director:"Producer / Showrunner", librarian:"Research Agent", explorer:"Curriculum Agent", critic:"Fact Checker",
+      task_designer:"Story Architect", planner:"Script Director", experimenter:"Animation Director", evaluator:"Production QC",
+      visualizer:"Creative Director", writer:"Story Writer", podcaster:"Voice & Music Director",
+      video_producer:"Editor & Video Producer", publisher:"YouTube & Thumbnail Director"
+    };
+    const stageLabels = {
+      created:"Production kickoff", research_ready:"Educational research", curriculum_ready:"Curriculum plan",
+      fact_check_ready:"Fact check", education_review_ready:"Educational review", story_ready:"Story concept",
+      script_ready:"Script development", storyboard_ready:"Storyboard design", animation_ready:"Animation plan",
+      audio_ready:"Voice and music", edit_ready:"Video edit", qc_ready:"Production QC",
+      thumbnail_ready:"YouTube package", release_ready:"Release preparation", complete:"Production complete",
+      direction_ready:"Research direction", literature_ready:"Research review", revising_ideas:"Revising ideas",
+      ideas_ready:"Ideas ready", waiting_idea:"Idea approval", idea_approved:"Idea approved", task_ready:"Task design",
+      plan_ready:"Experiment plan", results_approved:"Results approved", visualization_ready:"Visualization",
+      paper_ready:"Paper draft", podcast_ready:"Podcast", media_ready:"Media package"
+    };
     const themes = {
       night:{label:"Night",bg:"#08110f",surface:"#0f1c19",surface2:"#14241f",surface3:"#1a2c27",wall:"#17302a",floor:"#0c1a17",line:"#294039",ink:"#eef7f2",muted:"#8da39a",accent:"#71e2ad",accentInk:"#082017"},
       daylight:{label:"Daylight",bg:"#dce7e5",surface:"#f5faf8",surface2:"#e9f1ee",surface3:"#dce9e4",wall:"#b9d0c9",floor:"#aebfba",line:"#a7bbb4",ink:"#15231e",muted:"#60746c",accent:"#147a5a",accentInk:"#f4fff9"},
@@ -1250,7 +1305,7 @@
       const data = await api("/api/projects");
       if (!current) setServiceStatus("live", "Service ready");
       const signature = JSON.stringify((data.projects || []).map(project => [
-        project.project_id, project.stage, project.running, project.updated_at,
+        project.project_id, project.title, project.stage, project.running, project.updated_at,
         (project.topics || [])[0] || ""
       ])) + ":" + (current || "");
       if (signature === projectListSignature) return;
@@ -1261,7 +1316,7 @@
       if (!data.projects.length) {
         const empty = document.createElement("div");
         empty.className = "empty-copy";
-        empty.textContent = "No research runs yet.";
+        empty.textContent = "No episodes yet.";
         box.appendChild(empty);
       }
       data.projects.forEach(project => {
@@ -1272,9 +1327,9 @@
         const title = document.createElement("b");
         const dot = document.createElement("span");
         dot.className = "dot " + (project.running ? "live" : "");
-        title.append(dot, document.createTextNode(project.project_id));
+        title.append(dot, document.createTextNode(project.title || project.project_id));
         const detail = document.createElement("span");
-        detail.textContent = project.stage + " · " + ((project.topics || [])[0] || "");
+        detail.textContent = stageLabel(project.stage) + " · " + ((project.topics || [])[0] || "");
         button.append(title, detail);
         button.addEventListener("click", () => openProject(project.project_id));
         box.appendChild(button);
@@ -1353,18 +1408,52 @@
     function render(data) {
       const state = data.state || {};
       const agents = data.agents || [];
-      document.querySelector("#title").textContent = data.project_id || current;
+      document.querySelector("#title").textContent = data.manifest?.production?.title || data.project_id || current;
       document.querySelector("#topics").textContent = (state.topics || []).join("  /  ");
-      document.querySelector("#stage").textContent = state.stage || "unknown";
+      document.querySelector("#stage").textContent = stageLabel(state.stage || "unknown");
       document.querySelector("#running-dot").className = "dot " + (data.running ? "live" : "");
       document.querySelector("#completed-count").textContent = agents.filter(agent => agent.status === "done").length + "/13";
       document.querySelector("#active-count").textContent = agents.filter(agent => agent.status === "working").length;
+      renderProduction(data);
       renderOffice(agents, data.handoffs || []);
       renderDecision((data.pending_decisions || [])[0]);
       renderEvents((data.events || {}).events || []);
       lastEvent = Math.max(lastEvent, (data.events || {}).next || 0);
       renderHandoffs(data.handoffs || []);
       renderArtifacts(data.artifacts || []);
+    }
+
+    function renderProduction(data) {
+      const panel = document.querySelector("#production-brief");
+      const production = (data.manifest || {}).production;
+      panel.classList.toggle("hidden", !production);
+      if (!production) return;
+      document.querySelector("#production-objective").textContent = production.educational_objective || "Not set";
+      document.querySelector("#production-age").textContent = production.target_age || "Not set";
+      document.querySelector("#production-story").textContent = production.story_concept || "Not set";
+      document.querySelector("#production-deliverables").innerHTML = Object.values(production.deliverables || {}).map(item =>
+        `<div class="production-deliverable"><b>${esc(item.label || "Deliverable")}</b><span>${esc(item.status || "Not started")}</span></div>`
+      ).join("");
+      const button = document.querySelector("#run-production");
+      const complete = data.state?.stage === "complete";
+      button.disabled = Boolean(data.running) || complete;
+      button.textContent = complete ? "Production complete" : data.running ? "Production in progress" : "Start offline production";
+    }
+
+    async function runProduction() {
+      if (!current || !currentProject?.manifest?.production || currentProject.running || currentProject.state?.stage === "complete") return;
+      const button = document.querySelector("#run-production");
+      button.disabled = true;
+      button.textContent = "Starting production...";
+      try {
+        await api(`/api/projects/${encodeURIComponent(current)}/resume`, {method:"POST"});
+        await refresh(current);
+        loadProjects().catch(() => {});
+      } catch (error) {
+        notify(error.message);
+      } finally {
+        if (currentProject) renderProduction(currentProject);
+      }
     }
 
     function renderOffice(agents, handoffs) {
@@ -1415,8 +1504,8 @@
 
     function renderHandoffs(handoffs) {
       document.querySelector("#handoffs").innerHTML = handoffs.slice(-80).reverse().map(handoff =>
-        `<div class="handoff"><strong>${esc(roleLabel(handoff.agent))}</strong><span class="handoff-arrow">→</span>` +
-        `<strong>${esc(roleLabel(handoff.next_agent || "complete"))}</strong>` +
+        `<div class="handoff"><strong>${esc(handoff.agent_label || roleLabel(handoff.agent))}</strong><span class="handoff-arrow">→</span>` +
+        `<strong>${esc(handoff.next_agent_label || roleLabel(handoff.next_agent || "complete"))}</strong>` +
         `<p class="handoff-summary">${esc(handoff.summary || "Context packet recorded.")}</p></div>`
       ).join("") || '<div class="empty-copy">Context transfers appear between completed desks.</div>';
       document.querySelector("#handoff-count").textContent = `${handoffs.length} packets`;
@@ -1659,7 +1748,7 @@
           })
         });
         document.querySelector("#feedback").value = "";
-        status.textContent = "Decision recorded. The research run is resuming.";
+        status.textContent = "Decision recorded. The workflow is resuming.";
         await refresh();
       } catch (error) {
         status.textContent = error.message;
@@ -1697,7 +1786,7 @@
       const button = document.querySelector("#create-project");
       const errorBox = document.querySelector("#project-error");
       button.disabled = true;
-      button.textContent = "Opening…";
+      button.textContent = "Starting…";
       errorBox.textContent = "";
       try {
         await api("/api/projects", {
@@ -1711,7 +1800,7 @@
         errorBox.textContent = error.message;
       } finally {
         button.disabled = false;
-        button.textContent = "Open the office";
+        button.textContent = "Start production";
       }
     }
 
@@ -1818,7 +1907,8 @@
     function scrollChat() { const chat = document.querySelector("#agent-chat"); if (chat) chat.scrollTop = chat.scrollHeight; }
     function artifactUrl(path) { return "/api/projects/" + encodeURIComponent(current) + "/artifacts/" + path.split("/").map(encodeURIComponent).join("/"); }
     function initials(label) { return String(label || "").split(/\s+/).map(word => word[0]).join("").slice(0, 2).toUpperCase(); }
-    function roleLabel(name) { return String(name || "").replaceAll("_", " ").replace(/\b\w/g, letter => letter.toUpperCase()); }
+    function roleLabel(name) { return agentLabels[name] || String(name || "").replaceAll("_", " ").replace(/\b\w/g, letter => letter.toUpperCase()); }
+    function stageLabel(stage) { return stageLabels[stage] || String(stage || "").replaceAll("_", " "); }
     function formatTime(value) { if (!value) return ""; const date = new Date(value); return Number.isNaN(date.valueOf()) ? "" : date.toLocaleString(); }
     function formatBytes(value) { const bytes = Math.max(0, Number(value) || 0); if (bytes < 1024) return bytes + " B"; if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB"; return (bytes / 1048576).toFixed(1) + " MB"; }
 
@@ -1942,6 +2032,6 @@
     setupAppearance();
     bootstrap();
   </script>
-  <script type="module" src="/static/office3d.js?v=0.2.0"></script>
+  <script type="module" src="/static/office3d.js?v=0.2.1"></script>
 </body>
 </html>

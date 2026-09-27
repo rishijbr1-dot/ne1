@@ -52,16 +52,29 @@ disposable; there is no automatic downgrade. The offline Harness smoke uses that
 against a loopback fake provider and a fixed command, allowing the full SDK→Cordis→Bash→session
 path to be tested without a real credential or external model call.
 
-## Workflow state machine
+## Kids production workflow
 
 ```text
-director → librarian → explorer → critic → [human: idea]
-  → task_designer → planner → [human: plan]
-  → experimenter ⇄ evaluator (bounded iterations)
-  → [human: results] → visualizer → writer
-  → podcaster → video_producer → publisher(bundle only)
-  → [human: publication] → complete
+created (director) → research_ready (librarian) → curriculum_ready (explorer)
+    → fact_check_ready (critic) → education_review_ready (evaluator)
+    → story_ready (task_designer) → script_ready (planner + writer)
+    → storyboard_ready (visualizer) → animation_ready (experimenter)
+    → audio_ready (podcaster) → edit_ready (video_producer)
+    → qc_ready (evaluator) → thumbnail_ready (publisher)
+    → release_ready (publisher) → complete
 ```
+
+The 14 production states reuse the 13 existing internal agent keys. There is no `reviewer`
+key: `evaluator` handles the Educational Reviewer stage and later returns for Production QC.
+At `script_ready`, `planner` leads and the existing `writer` profile supplies a separate
+Story Writer handoff. `publisher` similarly handles both thumbnail preparation and the release
+package. These role labels are stage-specific; internal keys and API routes are unchanged.
+
+The seeded “How Does a Rainbow Form?” episode and newly created projects carry an offline
+production brief: educational objective, target age, story concept, and script, storyboard,
+audio, edit, thumbnail, and release statuses. The existing runner emits durable lifecycle
+events, artifacts, and handoffs for this workflow; it does not generate media or publish to
+YouTube. Older seeded research projects retain their decision-driven compatibility path.
 
 Every completed plugin writes a content-hashed handoff containing only its summary, produced
 artifacts, evidence references, decisions and open questions. The receiving agent gets a bounded
