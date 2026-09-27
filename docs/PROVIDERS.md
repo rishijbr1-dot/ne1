@@ -1,5 +1,18 @@
 # Model and API providers
 
+## Node WebUI content generation
+
+The WebUI's `/api/models` route and per-agent defaults are advisory display data; they do not
+configure every listed provider. Server-side episode content generation reuses the existing
+Gemini REST integration and reads `GEMINI_API_KEY` from the server environment. The optional
+`OPENFARS_CONTENT_MODEL` selects its Gemini model; the default is `gemini-2.5-flash`. The API
+reports whether this one provider is configured without exposing credentials.
+
+If the key is absent, generation routes return `503` with `state: "provider_unavailable"` and
+do not mutate package content, create artifacts, or add successful handoffs. Provider/network or
+structured-output errors similarly fail closed. No audio, image, video, or YouTube provider is
+integrated by this WebUI foundation.
+
 OpenFARS has three backend contracts:
 
 - `litellm` routes ordinary model turns through LiteLLM's unified interface for 100+ providers.

@@ -324,6 +324,9 @@
       line-height: 1;
       letter-spacing: -.05em;
     }
+    .project-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .project-title-row h1 { min-width: 0; overflow-wrap: anywhere; }
+    .demo-label { padding: 4px 7px; border: 1px solid var(--warning); border-radius: 6px; color: var(--warning); font-size: 8px; font-weight: 800; text-transform: uppercase; }
     .topics { color: var(--muted); font-size: 14px; }
     .project-metrics { display: flex; gap: 8px; }
     .metric {
@@ -353,6 +356,31 @@
     .production-deliverable b, .production-deliverable span { display: block; overflow-wrap: anywhere; }
     .production-deliverable b { font-size: 10px; }
     .production-deliverable span { margin-top: 4px; color: var(--muted); font-size: 9px; }
+    .content-tabs { display: flex; gap: 4px; margin-top: 13px; overflow-x: auto; border-bottom: 1px solid var(--line); scrollbar-width: thin; }
+    .content-tab { flex: none; padding: 8px 10px; border: 0; border-bottom: 2px solid transparent; color: var(--muted); background: transparent; font-size: 10px; }
+    .content-tab[aria-selected="true"] { border-color: var(--accent); color: var(--ink); }
+    .content-view { min-height: 135px; padding: 13px 2px 4px; }
+    .content-view h3 { margin: 0 0 7px; font-size: 12px; }
+    .content-view p { margin: 5px 0; color: var(--muted); font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .content-view ul { margin: 6px 0; padding-left: 17px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+    .content-entry { padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .content-entry:last-child { border-bottom: 0; }
+    .content-entry strong { font-size: 10px; }
+    .content-status { color: var(--warning) !important; }
+    .content-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+    .content-form label, .modal-box label { display: grid; gap: 4px; color: var(--muted); font-size: 9px; }
+    .content-form input, .content-form textarea, .content-form select, .modal-box input, .modal-box textarea, .modal-box select {
+      width: 100%; min-width: 0; padding: 8px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--bg); font: inherit;
+    }
+    .content-form textarea { min-height: 68px; resize: vertical; }
+    .content-form .wide { grid-column: 1 / -1; }
+    .content-actions { display: flex; flex-wrap: wrap; gap: 7px; padding: 10px 0 0; border-top: 1px solid var(--line); }
+    .content-actions button, .content-review button { padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--surface-2); font-size: 9px; font-weight: 700; }
+    .content-actions button:disabled, .content-review button:disabled { opacity: .5; cursor: not-allowed; }
+    .content-review { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; padding-top: 10px; }
+    .content-review select, .content-review textarea { min-width: 130px; flex: 1; padding: 7px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--bg); font: inherit; font-size: 9px; }
+    .content-review textarea { min-width: 100%; min-height: 46px; resize: vertical; }
+    .content-provider { color: var(--muted); font-size: 9px; }
 
     .decision {
       margin-bottom: 16px;
@@ -1019,6 +1047,8 @@
       .production-run { width: 100%; }
       .production-facts { grid-template-columns: 1fr 1fr; gap: 12px; }
       .production-deliverables { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .content-form { grid-template-columns: 1fr; }
+      .content-form .wide { grid-column: auto; }
       .office-header { display: block; }
       .room-tools { justify-content: space-between; margin-top: 13px; }
       .legend { justify-content: flex-start; }
@@ -1093,7 +1123,7 @@
         <header class="project-hero">
           <div>
             <div class="eyebrow">Children's educational video production · offline workflow</div>
-            <h1 id="title">Production project</h1>
+            <div class="project-title-row"><h1 id="title">Production project</h1><span id="project-demo-label" class="demo-label hidden">Seeded demo data</span></div>
             <div class="topics" id="topics"></div>
           </div>
           <div class="project-metrics">
@@ -1105,15 +1135,35 @@
 
         <section class="production-brief hidden" id="production-brief" aria-label="Episode production brief">
           <div class="production-brief-head">
-            <h2>Episode brief</h2>
-            <button class="primary-button production-run" id="run-production" onclick="runProduction()">Start offline production</button>
+            <h2>Production workspace</h2>
+            <span class="content-provider" id="content-provider-status" role="status"></span>
           </div>
-          <div class="production-facts">
-            <div class="production-fact"><b>Educational objective</b><p id="production-objective"></p></div>
-            <div class="production-fact"><b>Target age</b><p id="production-age"></p></div>
-            <div class="production-fact"><b>Story concept</b><p id="production-story"></p></div>
+          <nav class="content-tabs" role="tablist" aria-label="Production content sections">
+            <button class="content-tab" role="tab" data-content-tab="brief" aria-selected="true">Brief</button>
+            <button class="content-tab" role="tab" data-content-tab="script" aria-selected="false">Script</button>
+            <button class="content-tab" role="tab" data-content-tab="scenes" aria-selected="false">Scenes</button>
+            <button class="content-tab" role="tab" data-content-tab="storyboard" aria-selected="false">Storyboard</button>
+            <button class="content-tab" role="tab" data-content-tab="characters" aria-selected="false">Characters</button>
+            <button class="content-tab" role="tab" data-content-tab="assets" aria-selected="false">Assets</button>
+            <button class="content-tab" role="tab" data-content-tab="voice" aria-selected="false">Voice</button>
+            <button class="content-tab" role="tab" data-content-tab="music" aria-selected="false">Music</button>
+            <button class="content-tab" role="tab" data-content-tab="qa" aria-selected="false">QA / Approval</button>
+          </nav>
+          <div class="content-view" id="production-content-view" role="tabpanel" aria-live="polite"></div>
+          <div class="content-actions" id="production-content-actions">
+            <button type="button" data-generate-stage="research">Generate research / learning plan</button>
+            <button type="button" data-generate-stage="script">Generate script</button>
+            <button type="button" data-generate-stage="storyboard">Generate storyboard</button>
+            <button type="button" data-generate-stage="assets">Generate character / asset plan</button>
+            <button type="button" data-generate-stage="voice_music">Generate voice / music plan</button>
           </div>
-          <div class="production-deliverables" id="production-deliverables"></div>
+          <div class="content-review hidden" id="production-review-actions">
+            <select id="production-review-stage" aria-label="Stage to review"></select>
+            <textarea id="production-review-feedback" maxlength="4000" aria-label="Approval or revision feedback" placeholder="Human review notes"></textarea>
+            <button type="button" data-review-action="approve">Approve stage</button>
+            <button type="button" data-review-action="revise">Request revision</button>
+          </div>
+          <p class="inline-status" id="production-content-status" role="status" aria-live="polite"></p>
         </section>
 
         <section class="decision hidden" id="decision">
@@ -1205,6 +1255,18 @@
       <input id="project-id" maxlength="128" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{0,127}" required autocomplete="off">
       <label for="project-topics">Educational topic or learning objective</label>
       <textarea id="project-topics" maxlength="12000" required placeholder="How does a rainbow form?"></textarea>
+      <label for="brief-target-age">Target age</label>
+      <input id="brief-target-age" required value="Ages 6-8">
+      <label for="brief-objective">Educational objective</label>
+      <textarea id="brief-objective" maxlength="4000" required placeholder="What should children understand by the end?"></textarea>
+      <label for="brief-duration">Target duration (seconds)</label>
+      <input id="brief-duration" type="number" min="15" max="3600" step="1" value="120" required>
+      <label for="brief-tone">Tone</label>
+      <input id="brief-tone" required value="Warm and curious">
+      <label for="brief-style">Visual style</label>
+      <input id="brief-style" required value="2D educational story">
+      <label for="brief-story">Story concept</label>
+      <textarea id="brief-story" maxlength="4000" placeholder="Optional story premise"></textarea>
       <p class="form-error" id="project-error" role="alert"></p>
       <div class="actions">
         <button class="ghost" type="button" onclick="hideModal()">Cancel</button>
@@ -1249,6 +1311,7 @@
 
     let current = null;
     let currentProject = null;
+    let selectedContentTab = "brief";
     let selectedAgent = null;
     let lastEvent = 0;
     let stream = null;
@@ -1409,6 +1472,7 @@
       const state = data.state || {};
       const agents = data.agents || [];
       document.querySelector("#title").textContent = data.manifest?.production?.title || data.project_id || current;
+      document.querySelector("#project-demo-label").classList.toggle("hidden", !data.manifest?.demo);
       document.querySelector("#topics").textContent = (state.topics || []).join("  /  ");
       document.querySelector("#stage").textContent = stageLabel(state.stage || "unknown");
       document.querySelector("#running-dot").className = "dot " + (data.running ? "live" : "");
@@ -1423,36 +1487,130 @@
       renderArtifacts(data.artifacts || []);
     }
 
-    function renderProduction(data) {
+    function renderProduction(data, force = false) {
       const panel = document.querySelector("#production-brief");
       const production = (data.manifest || {}).production;
       panel.classList.toggle("hidden", !production);
       if (!production) return;
-      document.querySelector("#production-objective").textContent = production.educational_objective || "Not set";
-      document.querySelector("#production-age").textContent = production.target_age || "Not set";
-      document.querySelector("#production-story").textContent = production.story_concept || "Not set";
-      document.querySelector("#production-deliverables").innerHTML = Object.values(production.deliverables || {}).map(item =>
-        `<div class="production-deliverable"><b>${esc(item.label || "Deliverable")}</b><span>${esc(item.status || "Not started")}</span></div>`
-      ).join("");
-      const button = document.querySelector("#run-production");
-      const complete = data.state?.stage === "complete";
-      button.disabled = Boolean(data.running) || complete;
-      button.textContent = complete ? "Production complete" : data.running ? "Production in progress" : "Start offline production";
+      const provider = data.generationProvider || {provider:"gemini", configured:false, model:null};
+      document.querySelector("#content-provider-status").textContent = provider.configured
+        ? `${provider.provider} configured${provider.model ? ` · ${provider.model}` : ""}`
+        : `${provider.provider} unavailable · configure GEMINI_API_KEY on the server`;
+      document.querySelectorAll("[data-content-tab]").forEach(tab => tab.setAttribute("aria-selected", String(tab.dataset.contentTab === selectedContentTab)));
+      document.querySelectorAll("[data-generate-stage]").forEach(button => {
+        const stage = button.dataset.generateStage;
+        const ready = stage === "research" || stage === "script" && production.researchNotes?.status === "generated" ||
+          stage === "storyboard" && Boolean(production.script?.content) || stage === "assets" && production.scenes?.length > 0 ||
+          stage === "voice_music" && Boolean(production.script?.content);
+        const currentStatus = production.stageStatuses?.[stage];
+        button.disabled = Boolean(data.running) || !ready || currentStatus === "generated";
+        button.title = !provider.configured ? "A real provider is not configured." : !ready ? "Complete the preceding content stage first." : "";
+      });
+      const review = document.querySelector("#production-review-actions");
+      review.classList.toggle("hidden", selectedContentTab !== "qa");
+      renderReviewOptions(production);
+      const view = document.querySelector("#production-content-view");
+      if (force || !view.contains(document.activeElement)) view.innerHTML = renderProductionTab(production);
     }
 
-    async function runProduction() {
-      if (!current || !currentProject?.manifest?.production || currentProject.running || currentProject.state?.stage === "complete") return;
-      const button = document.querySelector("#run-production");
-      button.disabled = true;
-      button.textContent = "Starting production...";
+    function renderProductionTab(production) {
+      const empty = message => `<p class="empty-copy">${esc(message)}</p>`;
+      const list = items => `<ul>${items.map(item => `<li>${esc(item)}</li>`).join("")}</ul>`;
+      const entry = (title, body) => `<div class="content-entry"><strong>${esc(title)}</strong>${body}</div>`;
+      const brief = production.brief || {};
+      if (selectedContentTab === "brief") return `<h3>Episode brief</h3><form class="content-form" id="production-brief-form">
+        <label>Topic<input name="topic" required value="${esc(brief.topic || "")}"></label>
+        <label>Target age<input name="targetAge" required value="${esc(brief.targetAge || "")}"></label>
+        <label class="wide">Educational objective<textarea name="educationalObjective" required>${esc(brief.educationalObjective || "")}</textarea></label>
+        <label>Duration (seconds)<input name="durationSeconds" type="number" min="15" max="3600" step="1" required value="${esc(brief.durationSeconds || 120)}"></label>
+        <label>Tone<input name="tone" required value="${esc(brief.tone || "")}"></label>
+        <label>Visual style<input name="style" required value="${esc(brief.style || "")}"></label>
+        <label class="wide">Story concept<textarea name="storyConcept">${esc(brief.storyConcept || "")}</textarea></label>
+        <button class="approve wide" type="submit">Save brief</button></form>
+        ${entry("Learning outcomes", production.learningOutcomes?.length ? list(production.learningOutcomes) : empty("Not generated."))}
+        ${entry("Research notes", production.researchNotes?.notes?.length ? list(production.researchNotes.notes) : empty("Not generated. Source verification remains unverified."))}`;
+      if (selectedContentTab === "script") {
+        const script = production.script?.content;
+        return script ? `<h3>${esc(script.title)}</h3><p>${esc(script.hook)}</p><p><b>Objective:</b> ${esc(script.learningObjective)} · <b>Estimated:</b> ${esc(script.estimatedDurationSeconds)} sec</p>` +
+          script.scenes.map(scene => entry(`${scene.id} · ${scene.title}`, `<p>${esc(scene.purpose)}</p><p>${esc(scene.narration)}</p>${scene.dialogue.map(line => `<p><b>${esc(line.character)}:</b> ${esc(line.line)}</p>`).join("")}${list(scene.educationalCheckpoints)}`)).join("") : empty("No provider-generated script yet.");
+      }
+      if (selectedContentTab === "scenes") return production.script?.content?.scenes?.length
+        ? production.script.content.scenes.map(scene => entry(`${scene.id} · ${scene.title}`, `<p>${esc(scene.purpose)}</p><p>${esc(scene.estimatedDurationSeconds)} sec · ${esc(scene.narration)}</p>`)).join("")
+        : empty("Scene structure appears after a script is generated.");
+      if (selectedContentTab === "storyboard") return production.scenes?.length
+        ? production.scenes.map(scene => entry(`${scene.id} · ${scene.purpose}`, `<p>${esc(scene.visualDescription)}</p><p>Camera: ${esc(scene.cameraDirection)} · Transition: ${esc(scene.transition)} · ${esc(scene.estimatedDurationSeconds)} sec</p><p>Characters: ${esc(scene.characters.join(", "))} · Props: ${esc(scene.props.join(", "))}</p>${list(scene.assetRequirements)}`)).join("")
+        : empty("No provider-generated storyboard specification yet.");
+      if (selectedContentTab === "characters") return production.characters?.length
+        ? production.characters.map(character => entry(`${character.name} · ${character.role}`, `<p>${esc(character.appearance)}</p><p>Consistency: ${esc(character.consistencyNotes)}</p>`)).join("")
+        : empty("Character specifications are not generated yet.");
+      if (selectedContentTab === "assets") return production.visualAssets?.length
+        ? production.visualAssets.map(asset => entry(`${asset.id} · ${asset.type}`, `<p>${esc(asset.description)}</p><p>Scenes: ${esc(asset.sceneReferences.join(", "))}</p><p class="content-status">Asset: ${esc(asset.generationStatus)} · Provider: ${esc(asset.providerStatus)} · Ownership: ${esc(asset.sourceOwnership)}</p>`)).join("")
+        : empty("No asset plan. Planning does not create image or video files.");
+      if (selectedContentTab === "voice") return production.voicePlan?.narrationTracks?.length
+        ? production.voicePlan.narrationTracks.map(track => entry(`${track.sceneId} · ${track.timingSeconds}s`, `<p>${esc(track.text)}</p>`)).join("") + production.voicePlan.dialogueTracks.map(track => entry(`${track.character} · ${track.sceneId} · ${track.timingSeconds}s`, `<p>${esc(track.text)}</p>`)).join("") + `<p>Voice assignments: ${esc(production.voicePlan.voiceAssignments.map(item => `${item.character}: ${item.voiceDescription}`).join(" · "))}</p>`
+        : empty("No voice plan. No audio has been generated.");
+      if (selectedContentTab === "music") return production.musicSfxPlan
+        ? production.musicSfxPlan.musicCues.map(cue => entry(`Music · ${cue.sceneId} · ${cue.timingSeconds}s`, `<p>${esc(cue.description)}</p>`)).join("") + production.musicSfxPlan.sfxCues.map(cue => entry(`SFX · ${cue.sceneId} · ${cue.timingSeconds}s`, `<p>${esc(cue.description)}</p>`)).join("")
+        : empty("No music or sound-effects plan. No audio has been generated.");
+      const checks = production.qualityChecks || {};
+      return Object.entries({
+        "Educational quality": checks.educationalQuality,
+        "Age suitability": checks.ageSuitability,
+        "Factual review": checks.factualReview,
+        "Copyright / source review": checks.copyrightSourceReview,
+        "Human approval": checks.humanApproval,
+      }).map(([label, status]) => entry(label, `<p class="content-status">${esc(status || "pending_review")}</p>`)).join("") +
+        entry("Generation approvals", Object.entries(production.approvalState || {}).map(([stage, approval]) => `<p>${esc(stage)}: ${esc(approval.status)}${approval.feedback ? ` · ${esc(approval.feedback)}` : ""}</p>`).join("") || empty("No stage approvals recorded.")) +
+        entry("Revision history", production.revisionHistory?.length ? production.revisionHistory.map(item => `<p>${esc(item.stage)} · ${esc(item.action)} · ${esc(item.timestamp)}${item.feedback ? ` · ${esc(item.feedback)}` : ""}</p>`).join("") : empty("No revisions recorded."));
+    }
+
+    function renderReviewOptions(production) {
+      const select = document.querySelector("#production-review-stage");
+      const previous = select.value;
+      const stages = ["brief", "research", "script", "storyboard", "assets", "voice_music", "educationalQuality", "ageSuitability", "factualReview", "copyrightSourceReview", "humanApproval"];
+      select.innerHTML = stages.map(stage => `<option value="${stage}">${esc(stage.replaceAll("_", " "))}</option>`).join("");
+      if (stages.includes(previous)) select.value = previous;
+    }
+
+    async function runContentStage(stage) {
+      if (!current) return;
+      const status = document.querySelector("#production-content-status");
+      status.textContent = `Requesting ${stage.replaceAll("_", " ")} from the configured provider...`;
       try {
-        await api(`/api/projects/${encodeURIComponent(current)}/resume`, {method:"POST"});
+        await api(`/api/projects/${encodeURIComponent(current)}/production/${stage === "voice_music" ? "voice-music" : stage}/generate`, {method:"POST"});
         await refresh(current);
-        loadProjects().catch(() => {});
+        status.textContent = `${stage.replaceAll("_", " ")} generated; human review is still required.`;
       } catch (error) {
-        notify(error.message);
-      } finally {
-        if (currentProject) renderProduction(currentProject);
+        status.textContent = error.message;
+      }
+    }
+
+    async function saveProductionBrief(event) {
+      event.preventDefault();
+      const values = Object.fromEntries(new FormData(event.currentTarget));
+      values.durationSeconds = Number(values.durationSeconds);
+      try {
+        await api(`/api/projects/${encodeURIComponent(current)}/production/brief`, {
+          method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(values)
+        });
+        await refresh(current);
+        document.querySelector("#production-content-status").textContent = "Brief saved.";
+      } catch (error) {
+        document.querySelector("#production-content-status").textContent = error.message;
+      }
+    }
+
+    async function decideProductionStage(action) {
+      const stage = document.querySelector("#production-review-stage").value;
+      const feedback = document.querySelector("#production-review-feedback").value;
+      try {
+        await api(`/api/projects/${encodeURIComponent(current)}/production/stages/${encodeURIComponent(stage)}/decision`, {
+          method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({action, feedback})
+        });
+        await refresh(current);
+        document.querySelector("#production-content-status").textContent = `Human ${action} recorded for ${stage}.`;
+      } catch (error) {
+        document.querySelector("#production-content-status").textContent = error.message;
       }
     }
 
@@ -1783,6 +1941,15 @@
       if (!form.reportValidity()) return;
       const id = document.querySelector("#project-id").value.trim();
       const topics = document.querySelector("#project-topics").value.split("\n").map(item => item.trim()).filter(Boolean);
+      const brief = {
+        topic: topics.join(" / "),
+        targetAge: document.querySelector("#brief-target-age").value.trim(),
+        educationalObjective: document.querySelector("#brief-objective").value.trim(),
+        durationSeconds: Number(document.querySelector("#brief-duration").value),
+        tone: document.querySelector("#brief-tone").value.trim(),
+        style: document.querySelector("#brief-style").value.trim(),
+        storyConcept: document.querySelector("#brief-story").value.trim()
+      };
       const button = document.querySelector("#create-project");
       const errorBox = document.querySelector("#project-error");
       button.disabled = true;
@@ -1792,7 +1959,10 @@
         await api("/api/projects", {
           method: "POST",
           headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({project_id: id, topics})
+          body: JSON.stringify({project_id: id, topics: [brief.topic]})
+        });
+        await api(`/api/projects/${encodeURIComponent(id)}/production/brief`, {
+          method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(brief)
         });
         hideModal();
         await openProject(id);
@@ -1979,6 +2149,23 @@
 
     document.querySelector("#new-project").onclick = showModal;
     document.querySelector("#new-project-form").addEventListener("submit", createProject);
+    document.querySelector(".content-tabs").addEventListener("click", event => {
+      const tab = event.target.closest("[data-content-tab]");
+      if (!tab || !currentProject) return;
+      selectedContentTab = tab.dataset.contentTab;
+      renderProduction(currentProject, true);
+    });
+    document.querySelector("#production-content-view").addEventListener("submit", event => {
+      if (event.target.id === "production-brief-form") saveProductionBrief(event);
+    });
+    document.querySelector("#production-content-actions").addEventListener("click", event => {
+      const button = event.target.closest("[data-generate-stage]");
+      if (button && !button.disabled) runContentStage(button.dataset.generateStage);
+    });
+    document.querySelector("#production-review-actions").addEventListener("click", event => {
+      const button = event.target.closest("[data-review-action]");
+      if (button) decideProductionStage(button.dataset.reviewAction);
+    });
     document.querySelector("#appearance-button").onclick = toggleAppearance;
     document.querySelector("#motion-toggle").onclick = toggleRoomMotion;
     document.querySelector("#modal").addEventListener("click", event => {

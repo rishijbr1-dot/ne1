@@ -72,9 +72,24 @@ package. These role labels are stage-specific; internal keys and API routes are 
 
 The seeded “How Does a Rainbow Form?” episode and newly created projects carry an offline
 production brief: educational objective, target age, story concept, and script, storyboard,
-audio, edit, thumbnail, and release statuses. The existing runner emits durable lifecycle
-events, artifacts, and handoffs for this workflow; it does not generate media or publish to
-YouTube. Older seeded research projects retain their decision-driven compatibility path.
+audio, edit, thumbnail, and release statuses. This is explicitly seed/demo data. Production
+projects do not use the old simulated runner: the Node WebUI's generation routes call its
+configured provider, validate structured output, and only then update package state, artifacts,
+agent handoffs, and SSE events. Without a provider they report unavailable and do not claim
+success. Older seeded research projects retain their decision-driven compatibility path.
+
+The production package connects a user-authored brief, model-suggested topic notes (unverified),
+learning outcomes, script, scenes, storyboard, character and asset specifications, and voice/music
+plans. Image and audio files are not rendered. Educational quality, age suitability, facts,
+copyright/source ownership, and final human approval remain explicitly pending until reviewed.
+Generation uses the existing Gemini environment integration; it does not treat the static
+`/api/models` catalog as proof that routes are configured.
+
+Production API: `POST /api/projects/:id/production/brief`, `POST .../research/generate`,
+`POST .../script/generate`, `POST .../storyboard/generate`, `POST .../assets/generate`,
+`POST .../voice-music/generate`, `GET .../production/package`, and
+`POST .../production/stages/:stage/decision`. Successful generation produces ordinary keyed
+agent handoffs and events; provider failures do not create successful content artifacts.
 
 Every completed plugin writes a content-hashed handoff containing only its summary, produced
 artifacts, evidence references, decisions and open questions. The receiving agent gets a bounded

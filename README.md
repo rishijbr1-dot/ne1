@@ -4,6 +4,10 @@
 
 **A local-first, multi-agent research OS for ideas beyond the average.**
 
+This repository also includes the AI Kids Studio Node WebUI, an incremental educational-video
+production workspace. Its script/storyboard/asset-plan/voice-plan generation uses the configured
+server-side provider only; it does not synthesize media or upload to YouTube.
+
 OpenFARS routes each research stage to the model best suited to it, searches a
 quality-diverse idea frontier, asks humans only for high-value decisions, runs real experiments
 locally or on remote GPUs, and turns verified evidence into figures, a paper, media packages and
@@ -30,6 +34,21 @@ direction → literature → exploration → critique → task → plan
   to GitHub, Hugging Face and ModelScope.
 
 ## Quickstart
+
+### AI Kids Studio WebUI
+
+For the bundled Node WebUI, install the existing npm dependencies and start the local server:
+
+```bash
+npm install
+npm start
+```
+
+Open `http://localhost:3000`. The production brief, demo project, task graph, and 3D office work
+without a provider. To enable real text generation, set `GEMINI_API_KEY` in the server environment
+before starting it. `OPENFARS_CONTENT_MODEL` optionally selects the Gemini model. No key is
+required to inspect existing or seeded content; generation reports provider unavailability rather
+than substituting generated-looking demo text.
 
 Install Miniconda first. The commands below create an isolated Python 3.11 environment
 (OpenFARS supports Python 3.10+).

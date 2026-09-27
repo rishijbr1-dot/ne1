@@ -2,11 +2,40 @@ import express, { Request, Response, NextFunction } from "express";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import {
+  createProductionPackage,
+  numberValue,
+  objectValue,
+  promptForAssetPlan,
+  promptForResearch,
+  promptForScript,
+  promptForStoryboard,
+  promptForVoiceMusic,
+  requiredString,
+  stringArray,
+  validateDialogue,
+  validateAssetPlan,
+  validateResearch,
+  validateScript,
+  validateStoryboard,
+  validateVoiceMusicPlan,
+  type CharacterSpecification,
+  type ProductionBriefInput,
+  type ProductionPackage,
+  type VoiceMusicPlan,
+  type VisualAssetSpecification,
+} from "./production-content.js";
+import {
+  generateStructuredOutput,
+  generationProviderStatus,
+  ProviderGenerationError,
+  ProviderUnavailableError,
+} from "./generation-provider.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT || 3000);
 const HOST = "0.0.0.0";
 
 const PROJECT_ID_REGEX = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
@@ -140,23 +169,6 @@ interface WorkflowStep {
   supportAgents?: Array<{ agent: string; label: string; summary: string }>;
   deliverable?: string;
 }
-
-const PRODUCTION_WORKFLOW: WorkflowStep[] = [
-  { stage: "created", nextStage: "research_ready", agent: "director", label: "Producer / Showrunner", summary: "Production kickoff is set: episode scope, learning goal, department handoffs, and approval checkpoints are organized." },
-  { stage: "research_ready", nextStage: "curriculum_ready", agent: "librarian", label: "Research Agent", summary: "Collected reliable, age-appropriate source material for the educational topic." },
-  { stage: "curriculum_ready", nextStage: "fact_check_ready", agent: "explorer", label: "Curriculum Agent", summary: "Defined age-appropriate learning objectives, explanations, examples, and lesson structure." },
-  { stage: "fact_check_ready", nextStage: "education_review_ready", agent: "critic", label: "Fact Checker", summary: "Checked factual accuracy and flagged misleading or unsuitable educational claims." },
-  { stage: "education_review_ready", nextStage: "story_ready", agent: "evaluator", label: "Educational Reviewer", summary: "Reviewed the learning plan for children's age suitability, clarity, safety, and educational value." },
-  { stage: "story_ready", nextStage: "script_ready", agent: "task_designer", label: "Story Architect", summary: "Turned the approved learning objective into an original story concept, characters, scenes, and narrative structure." },
-  { stage: "script_ready", nextStage: "storyboard_ready", agent: "planner", label: "Script Director", summary: "Built the detailed scene order, dialogue plan, narration, and pacing.", supportAgents: [{ agent: "writer", label: "Story Writer", summary: "Drafted child-friendly story narration and character dialogue from the approved educational plan." }], deliverable: "script" },
-  { stage: "storyboard_ready", nextStage: "animation_ready", agent: "visualizer", label: "Creative Director", summary: "Designed storyboard shots, characters, environments, visual style, and scene composition.", deliverable: "storyboard" },
-  { stage: "animation_ready", nextStage: "audio_ready", agent: "experimenter", label: "Animation Director", summary: "Planned scene motion, character actions, camera direction, and animation requirements." },
-  { stage: "audio_ready", nextStage: "edit_ready", agent: "podcaster", label: "Voice & Music Director", summary: "Planned narration, character voices, background music, ambience, and sound effects.", deliverable: "audio" },
-  { stage: "edit_ready", nextStage: "qc_ready", agent: "video_producer", label: "Editor & Video Producer", summary: "Assembled the scene, audio, captions, transitions, and final video edit plan.", deliverable: "video_edit" },
-  { stage: "qc_ready", nextStage: "thumbnail_ready", agent: "evaluator", label: "Production QC", summary: "Reviewed the episode package, identified production issues, and recorded required revisions." },
-  { stage: "thumbnail_ready", nextStage: "release_ready", agent: "publisher", label: "YouTube & Thumbnail Director", summary: "Prepared the thumbnail concept, title, description, chapters, SEO metadata, and Shorts opportunities.", deliverable: "thumbnail" },
-  { stage: "release_ready", nextStage: "complete", agent: "publisher", label: "YouTube & Thumbnail Director", summary: "Completed the offline YouTube publishing package and release checklist; no external upload was performed.", deliverable: "release" },
-];
 
 const LEGACY_RESEARCH_WORKFLOW: WorkflowStep[] = [
   { stage: "created", nextStage: "direction_ready", agent: "director", label: "Director", summary: "Refined charter and formalized core falsifiable inquiry." },
@@ -338,20 +350,15 @@ function computeAgentRoster(project: ProjectData) {
 }
 
 function createProductionBrief(title: string, objective: string, targetAge: string, storyConcept: string) {
-  return {
-    title,
-    educational_objective: objective,
-    target_age: targetAge,
-    story_concept: storyConcept,
-    deliverables: {
-      script: { label: "Script", status: "Not started" },
-      storyboard: { label: "Storyboard", status: "Not started" },
-      audio: { label: "Audio", status: "Not started" },
-      video_edit: { label: "Video / edit", status: "Not started" },
-      thumbnail: { label: "Thumbnail", status: "Not started" },
-      release: { label: "Release", status: "Not started" },
-    },
-  };
+  return createProductionPackage({
+    topic: title,
+    targetAge,
+    educationalObjective: objective,
+    durationSeconds: 120,
+    tone: "warm and curious",
+    style: "2D educational story",
+    storyConcept,
+  });
 }
 
 function seedInitialProjects() {
@@ -440,6 +447,7 @@ The Explorer agent proposed three falsifiable research avenues. The Critic audit
     manifest: {
       version: "0.2.0",
       created_at: new Date(Date.now() - 3600000).toISOString(),
+      demo: true,
     },
     running: false,
     updated_at: Date.now() - 60000,
@@ -573,6 +581,7 @@ The Explorer agent proposed three falsifiable research avenues. The Critic audit
     manifest: {
       version: "0.2.0",
       created_at: new Date(Date.now() - 86400000).toISOString(),
+      demo: true,
     },
     running: false,
     updated_at: Date.now() - 3600000,
@@ -601,6 +610,7 @@ The Explorer agent proposed three falsifiable research avenues. The Critic audit
     manifest: {
       version: "0.2.0",
       created_at: new Date().toISOString(),
+      demo: true,
       production: createProductionBrief(
         "How Does a Rainbow Form?",
         "Explain how sunlight entering water droplets is refracted, reflected, and separated into the colors of a rainbow.",
@@ -625,6 +635,134 @@ The Explorer agent proposed three falsifiable research avenues. The Critic audit
 
 seedInitialProjects();
 
+const CONTENT_AGENTS: Record<string, string[]> = {
+  research: ["librarian", "explorer"],
+  script: ["planner", "writer"],
+  storyboard: ["visualizer"],
+  assets: ["experimenter"],
+  voice_music: ["podcaster"],
+};
+
+function productionPackage(project: ProjectData): ProductionPackage | null {
+  return project.manifest.production as ProductionPackage | undefined || null;
+}
+
+function addProductionHandoff(project: ProjectData, stage: string, agentKey: string, summary: string, content: unknown) {
+  const profile = AGENT_PROFILES[agentKey];
+  const packageData = productionPackage(project)!;
+  const revision = packageData.revisionHistory.filter((item) => item.stage === stage && item.action === "revise").length + 1;
+  const artifactPath = `production/${stage}-${agentKey}-r${revision}.json`;
+  const artifactContent = JSON.stringify(content, null, 2);
+  const bytes = Buffer.byteLength(artifactContent);
+  project.artifacts.set(artifactPath, { path: artifactPath, bytes, mimeType: "application/json; charset=utf-8", content: artifactContent });
+  const nextAgent = ({ librarian: "explorer", explorer: "writer", writer: "visualizer", visualizer: "experimenter", experimenter: "podcaster" } as Record<string, string>)[agentKey];
+  const handoff: Handoff = {
+    agent: agentKey,
+    agent_label: profile.label,
+    next_agent: nextAgent,
+    next_agent_label: nextAgent ? AGENT_PROFILES[nextAgent].label : undefined,
+    summary,
+    time: new Date().toISOString(),
+    artifacts: [{ path: artifactPath, bytes }],
+    open_questions: ["Educational, factual, age-suitability, and source/license checks remain pending human review."],
+  };
+  project.handoffs.push(handoff);
+  broadcastEvent(project, "agent.lifecycle", { agent: agentKey, phase: "done" });
+  broadcastEvent(project, "agent.handoff", { agent: agentKey, handoff });
+}
+
+function providerErrorResponse(res: Response, error: unknown) {
+  if (error instanceof ProviderUnavailableError) {
+    res.status(503).json({ state: "provider_unavailable", error: error.code, message: error.message, provider: generationProviderStatus() });
+    return;
+  }
+  if (error instanceof ProviderGenerationError) {
+    res.status(502).json({ state: "generation_failed", error: error.code, message: error.message, provider: generationProviderStatus() });
+    return;
+  }
+  res.status(502).json({ state: "generation_failed", error: "invalid_provider_output", message: error instanceof Error ? error.message : "The provider output could not be validated; no content was stored.", provider: generationProviderStatus() });
+}
+
+async function runProviderStage<T>(
+  project: ProjectData,
+  res: Response,
+  stage: string,
+  activeState: string,
+  agentKeys: string[],
+  prompt: string,
+  validate: (value: unknown) => T,
+  commit: (packageData: ProductionPackage, output: T) => void,
+) {
+  const packageData = productionPackage(project);
+  if (!packageData) {
+    res.status(409).json({ error: "This project does not have a production brief." });
+    return;
+  }
+  if (packageData.stageStatuses[stage] === "generated") {
+    res.status(409).json({ error: `Stage '${stage}' is already generated; request a revision before generating it again.` });
+    return;
+  }
+  if (!generationProviderStatus().configured) {
+    providerErrorResponse(res, new ProviderUnavailableError());
+    return;
+  }
+  if (project.running) {
+    res.status(409).json({ error: "Another project stage is currently running." });
+    return;
+  }
+
+  const previousState = project.state.stage;
+  project.running = true;
+  project.state.stage = activeState;
+  project.updated_at = Date.now();
+  broadcastEvent(project, "production.stage", { from: previousState, to: activeState, phase: "started" });
+  for (const agent of agentKeys) broadcastEvent(project, "agent.lifecycle", { agent, phase: "start" });
+  broadcastEvent(project, "production.generation_started", { stage, provider: generationProviderStatus() });
+
+  try {
+    const raw = await generateStructuredOutput<unknown>(prompt);
+    const output = validate(raw);
+    commit(packageData, output);
+    if (project.state.stage !== activeState) broadcastEvent(project, "production.stage", { from: activeState, to: project.state.stage, phase: "content_ready" });
+    for (const agent of agentKeys) {
+      const payload = stage === "research" ? agent === "librarian"
+        ? { researchNotes: packageData.researchNotes, verification: "unverified" }
+        : { learningOutcomes: packageData.learningOutcomes }
+        : stage === "script" && agent === "planner"
+          ? packageData.script.content?.scenes.map(({ id, title, purpose, estimatedDurationSeconds }) => ({ id, title, purpose, estimatedDurationSeconds }))
+          : output;
+      addProductionHandoff(project, stage, agent, `Generated ${stage.replace(/_/g, " ")} content using the configured ${generationProviderStatus().provider} provider; review remains pending.`, payload);
+    }
+    project.running = false;
+    project.updated_at = Date.now();
+    broadcastEvent(project, "production.generation_completed", { stage, provider: generationProviderStatus() });
+    res.json({ status: "generated", provider: generationProviderStatus(), package: packageData });
+  } catch (error) {
+    project.running = false;
+    project.state.stage = previousState;
+    project.updated_at = Date.now();
+    for (const agent of agentKeys) broadcastEvent(project, "agent.lifecycle", { agent, phase: "error" });
+    broadcastEvent(project, "production.generation_failed", { stage, error: error instanceof Error ? error.message : "generation failed" });
+    providerErrorResponse(res, error);
+  }
+}
+
+function productionBriefInput(body: any): ProductionBriefInput {
+  const durationSeconds = Number(body?.durationSeconds ?? 120);
+  if (!Number.isInteger(durationSeconds) || durationSeconds < 15 || durationSeconds > 3600) {
+    throw new Error("durationSeconds must be an integer between 15 and 3600");
+  }
+  return {
+    topic: requiredString(body?.topic, "topic"),
+    targetAge: requiredString(body?.targetAge, "targetAge"),
+    educationalObjective: requiredString(body?.educationalObjective, "educationalObjective"),
+    durationSeconds: numberValue(durationSeconds, "durationSeconds"),
+    tone: requiredString(body?.tone || "unspecified", "tone"),
+    style: requiredString(body?.style || "unspecified", "style"),
+    storyConcept: typeof body?.storyConcept === "string" ? body.storyConcept.trim() : "",
+  };
+}
+
 function updateProductionDeliverable(project: ProjectData, key: string, status: string) {
   const deliverable = project.manifest.production?.deliverables?.[key];
   if (!deliverable) return;
@@ -634,9 +772,13 @@ function updateProductionDeliverable(project: ProjectData, key: string, status: 
 
 // Pipeline simulation runner for newly created or resumed projects
 function runProjectPipeline(project: ProjectData) {
+  if (project.manifest.production) {
+    project.running = false;
+    return;
+  }
   if (project.running) return;
   project.running = true;
-  const sequence = project.manifest.production ? PRODUCTION_WORKFLOW : LEGACY_RESEARCH_WORKFLOW;
+  const sequence = LEGACY_RESEARCH_WORKFLOW;
 
   async function step() {
     if (!project.running) return;
@@ -769,6 +911,7 @@ app.get("/api/models", (req: Request, res: Response) => {
     policy: "advisory_only_no_silent_route_changes",
     routes,
     assignments,
+    content_generation: generationProviderStatus(),
     refreshed_at: new Date().toISOString(),
     sources: [
       { name: "artificial-analysis", status: "active" },
@@ -851,7 +994,7 @@ app.post("/api/projects", (req: Request, res: Response) => {
   projects.set(project_id, newProject);
   runProjectPipeline(newProject);
 
-  res.status(202).json({ status: "started", project_id });
+  res.status(202).json({ status: "created", project_id });
 });
 
 // Get single project
@@ -873,6 +1016,7 @@ app.get("/api/projects/:projectId", (req: Request, res: Response) => {
     project_id: p.project_id,
     state: p.state,
     manifest: p.manifest,
+    generationProvider: generationProviderStatus(),
     running: p.running,
     pending_decisions: p.pending_decisions,
     handoffs: p.handoffs,
@@ -885,12 +1029,262 @@ app.get("/api/projects/:projectId", (req: Request, res: Response) => {
   });
 });
 
+app.post("/api/projects/:projectId/production/brief", (req: Request, res: Response) => {
+  const projectId = getParam(req.params.projectId);
+  const project = projects.get(projectId);
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+  if (project.running) {
+    res.status(409).json({ error: "Cannot change the brief while a generation stage is running." });
+    return;
+  }
+  const current = productionPackage(project);
+  if (!current) {
+    res.status(409).json({ error: "This project uses the research workflow and cannot be converted in place." });
+    return;
+  }
+  if (Object.values(current.stageStatuses).some((status) => status === "generated")) {
+    res.status(409).json({ error: "The brief cannot be replaced after generation. Request a stage revision instead." });
+    return;
+  }
+  try {
+    const brief = productionBriefInput(req.body);
+    const packageData = createProductionPackage(brief);
+    project.manifest.production = packageData;
+    project.state.topics = [brief.topic];
+    project.state.stage = "created";
+    project.updated_at = Date.now();
+    broadcastEvent(project, "production.brief_created", { topic: brief.topic, targetAge: brief.targetAge });
+    res.status(201).json({ status: "created", package: packageData });
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : "Invalid production brief" });
+  }
+});
+
+app.get("/api/projects/:projectId/production/package", (req: Request, res: Response) => {
+  const projectId = getParam(req.params.projectId);
+  const project = projects.get(projectId);
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+  const packageData = productionPackage(project);
+  if (!packageData) {
+    res.status(404).json({ error: "Production package not found" });
+    return;
+  }
+  res.json({ project_id: projectId, stage: project.state.stage, running: project.running, provider: generationProviderStatus(), package: packageData });
+});
+
+app.post("/api/projects/:projectId/production/research/generate", async (req: Request, res: Response) => {
+  const project = projects.get(getParam(req.params.projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+  if (!generationProviderStatus().configured) {
+    providerErrorResponse(res, new ProviderUnavailableError());
+    return;
+  }
+  const packageData = productionPackage(project);
+  if (!packageData) {
+    res.status(409).json({ error: "This project does not have a production brief." });
+    return;
+  }
+  const prompt = promptForResearch(packageData.brief);
+  await runProviderStage(project, res, "research", "research_ready", CONTENT_AGENTS.research, prompt, validateResearch, (result, output) => {
+    result.learningOutcomes = output.learningOutcomes;
+    result.researchNotes = { status: "generated", notes: output.researchNotes, sources: [], verification: "unverified" };
+    result.stageStatuses.research = "generated";
+    result.approvalState.research = { status: "pending" };
+    project.state.stage = "curriculum_ready";
+  });
+});
+
+app.post("/api/projects/:projectId/production/script/generate", async (req: Request, res: Response) => {
+  const project = projects.get(getParam(req.params.projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+  if (!generationProviderStatus().configured) {
+    providerErrorResponse(res, new ProviderUnavailableError());
+    return;
+  }
+  const packageData = productionPackage(project);
+  if (!packageData) {
+    res.status(409).json({ error: "This project does not have a production brief." });
+    return;
+  }
+  if (packageData.researchNotes.status !== "generated") {
+    res.status(409).json({ error: "Generate topic notes and learning outcomes before requesting a script." });
+    return;
+  }
+  const feedback = packageData.approvalState.script?.feedback;
+  const prompt = promptForScript(packageData.brief, packageData.researchNotes.notes, packageData.learningOutcomes) + (feedback ? `\nRevision feedback: ${feedback}` : "");
+  await runProviderStage(project, res, "script", "script_ready", CONTENT_AGENTS.script, prompt, validateScript, (result, output) => {
+    result.script = { status: "generated", content: output };
+    result.episodeTitle = output.title;
+    result.title = output.title;
+    result.stageStatuses.script = "generated";
+    result.approvalState.script = { status: "pending" };
+    result.deliverables.script.status = `Generated by ${generationProviderStatus().provider}; review pending`;
+    project.state.stage = "script_ready";
+  });
+});
+
+app.post("/api/projects/:projectId/production/storyboard/generate", async (req: Request, res: Response) => {
+  const project = projects.get(getParam(req.params.projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+  if (!generationProviderStatus().configured) {
+    providerErrorResponse(res, new ProviderUnavailableError());
+    return;
+  }
+  const packageData = productionPackage(project);
+  if (!packageData?.script.content) {
+    res.status(409).json({ error: "Generate a script before requesting a storyboard." });
+    return;
+  }
+  const feedback = packageData.approvalState.storyboard?.feedback;
+  const prompt = promptForStoryboard(packageData.brief, packageData.script.content) + (feedback ? `\nRevision feedback: ${feedback}` : "");
+  const validateStoryboardOutput = (value: unknown) => {
+    const scenes = validateStoryboard(value);
+    const scriptIds = packageData.script.content!.scenes.map((scene) => scene.id);
+    if (scenes.length !== scriptIds.length || scenes.some((scene, index) => scene.id !== scriptIds[index])) {
+      throw new Error("Invalid structured output: storyboard scene ids must match the source script in order");
+    }
+    return scenes;
+  };
+  await runProviderStage(project, res, "storyboard", "storyboard_ready", CONTENT_AGENTS.storyboard, prompt, validateStoryboardOutput, (result, output) => {
+    result.scenes = output;
+    result.storyboardBeats = output;
+    result.stageStatuses.storyboard = "generated";
+    result.approvalState.storyboard = { status: "pending" };
+    result.deliverables.storyboard.status = `Specification generated by ${generationProviderStatus().provider}; review pending`;
+    project.state.stage = "storyboard_ready";
+  });
+});
+
+app.post("/api/projects/:projectId/production/assets/generate", async (req: Request, res: Response) => {
+  const project = projects.get(getParam(req.params.projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+  if (!generationProviderStatus().configured) {
+    providerErrorResponse(res, new ProviderUnavailableError());
+    return;
+  }
+  const packageData = productionPackage(project);
+  if (!packageData || packageData.scenes.length === 0) {
+    res.status(409).json({ error: "Generate a storyboard before requesting an asset plan." });
+    return;
+  }
+  const feedback = packageData.approvalState.assets?.feedback;
+  const prompt = promptForAssetPlan(packageData.brief, packageData.scenes) + (feedback ? `\nRevision feedback: ${feedback}` : "");
+  await runProviderStage(project, res, "assets", "animation_ready", CONTENT_AGENTS.assets, prompt, validateAssetPlan, (result, output) => {
+    result.characters = output.characters as CharacterSpecification[];
+    result.visualAssets = output.visualAssets as VisualAssetSpecification[];
+    result.stageStatuses.assets = "generated";
+    result.approvalState.assets = { status: "pending" };
+    project.state.stage = "animation_ready";
+  });
+});
+
+app.post("/api/projects/:projectId/production/voice-music/generate", async (req: Request, res: Response) => {
+  const project = projects.get(getParam(req.params.projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+  if (!generationProviderStatus().configured) {
+    providerErrorResponse(res, new ProviderUnavailableError());
+    return;
+  }
+  const packageData = productionPackage(project);
+  if (!packageData?.script.content) {
+    res.status(409).json({ error: "Generate a script before requesting a voice and music plan." });
+    return;
+  }
+  const feedback = packageData.approvalState.voice_music?.feedback;
+  const prompt = promptForVoiceMusic(packageData.brief, packageData.script.content) + (feedback ? `\nRevision feedback: ${feedback}` : "");
+  await runProviderStage(project, res, "voice_music", "audio_ready", CONTENT_AGENTS.voice_music, prompt, validateVoiceMusicPlan, (result, output) => {
+    result.voicePlan = output;
+    result.musicSfxPlan = output;
+    result.stageStatuses.voice_music = "generated";
+    result.approvalState.voice_music = { status: "pending" };
+    result.deliverables.audio.status = `Plan generated by ${generationProviderStatus().provider}; audio not rendered`;
+    project.state.stage = "audio_ready";
+  });
+});
+
+app.post("/api/projects/:projectId/production/stages/:stage/decision", (req: Request, res: Response) => {
+  const project = projects.get(getParam(req.params.projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+  const packageData = productionPackage(project);
+  if (!packageData) {
+    res.status(409).json({ error: "This project does not have a production brief." });
+    return;
+  }
+  const stage = getParam(req.params.stage);
+  const { action, feedback = "" } = req.body || {};
+  const safetyFields = ["educationalQuality", "ageSuitability", "factualReview", "copyrightSourceReview"] as const;
+  const generatedStages = ["research", "script", "storyboard", "assets", "voice_music"];
+  if (project.running) {
+    res.status(409).json({ error: "Cannot approve or revise while generation is running." });
+    return;
+  }
+  if (action !== "approve" && action !== "revise") {
+    res.status(400).json({ error: "action must be approve or revise" });
+    return;
+  }
+  if (![...generatedStages, ...safetyFields, "humanApproval", "brief"].includes(stage as any)) {
+    res.status(400).json({ error: "Unknown production review stage" });
+    return;
+  }
+  if (generatedStages.includes(stage) && packageData.stageStatuses[stage] !== "generated") {
+    res.status(409).json({ error: `Stage '${stage}' has no generated content to review.` });
+    return;
+  }
+  if (stage === "humanApproval" && action === "approve") {
+    const requiredChecks = ["educationalQuality", "ageSuitability", "factualReview", "copyrightSourceReview"] as const;
+    const outstanding = requiredChecks.filter((check) => packageData.qualityChecks[check] !== "human_approved");
+    if (outstanding.length > 0) {
+      res.status(409).json({ error: `Human approval requires completed QA reviews: ${outstanding.join(", ")}.` });
+      return;
+    }
+  }
+  const status = action === "approve" ? "approved" : "revision_requested";
+  packageData.approvalState[stage] = { status, feedback: String(feedback).slice(0, 4000) };
+  packageData.revisionHistory.push({ stage, action, feedback: String(feedback).slice(0, 4000), timestamp: new Date().toISOString() });
+  if (action === "revise" && generatedStages.includes(stage)) packageData.stageStatuses[stage] = "revision_requested";
+  if (safetyFields.includes(stage as typeof safetyFields[number])) {
+    packageData.qualityChecks[stage as typeof safetyFields[number]] = action === "approve" ? "human_approved" : "changes_requested";
+  }
+  if (stage === "humanApproval") packageData.qualityChecks.humanApproval = action === "approve" ? "approved" : "changes_requested";
+  project.updated_at = Date.now();
+  const event = broadcastEvent(project, "production.stage_decided", { stage, action, feedback: String(feedback).slice(0, 4000) });
+  res.json({ status: "recorded", event, package: packageData });
+});
+
 // Resume project
 app.post("/api/projects/:projectId/resume", (req: Request, res: Response) => {
   const projectId = getParam(req.params.projectId);
   const p = projects.get(projectId);
   if (!p) {
     res.status(404).json({ error: "Project not found" });
+    return;
+  }
+  if (p.manifest.production) {
+    res.status(409).json({ error: "Production projects advance only through validated content-generation and approval routes." });
     return;
   }
   runProjectPipeline(p);
@@ -1159,7 +1553,7 @@ app.get("/api/projects/:projectId/artifacts/*", (req: Request, res: Response) =>
   res.send(art.content || "");
 });
 
-// Bundle builder
+// Bundle endpoint is retained but does not claim an unimplemented bundle exists.
 app.post("/api/projects/:projectId/bundle", (req: Request, res: Response) => {
   const projectId = getParam(req.params.projectId);
   const p = projects.get(projectId);
@@ -1168,13 +1562,7 @@ app.post("/api/projects/:projectId/bundle", (req: Request, res: Response) => {
     return;
   }
 
-  res.json({
-    status: "bundled",
-    project_id: p.project_id,
-    bundle_hash: "sha256:7b919a32c028e18f2d5918bb12",
-    artifacts_included: p.artifacts.size,
-    timestamp: new Date().toISOString(),
-  });
+  res.status(501).json({ state: "unavailable", error: "Release bundle creation is not implemented by this WebUI." });
 });
 
 app.listen(PORT, HOST, () => {
