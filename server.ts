@@ -31,6 +31,10 @@ import {
   ProviderGenerationError,
   ProviderUnavailableError,
 } from "./generation-provider.js";
+import {
+  createProductionStagePlan,
+  nextProductionOrchestrationStep,
+} from "./production-orchestration.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1223,6 +1227,51 @@ app.post("/api/projects/:projectId/production/voice-music/generate", async (req:
   });
 });
 
+app.post("/api/projects/:projectId/production/orchestrate", async (req: Request, res: Response) => {
+  const project = projects.get(getParam(req.params.projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+  const packageData = productionPackage(project);
+  if (!packageData) {
+    res.status(409).json({ error: "This project does not have a production brief." });
+    return;
+  }
+  if (project.running) {
+    res.status(409).json({ error: "Another project stage is currently running." });
+    return;
+  }
+
+  const step = nextProductionOrchestrationStep(packageData);
+  if (step.kind === "awaiting_approval") {
+    res.json({ status: "awaiting_approval", stage: step.stage, package: packageData });
+    return;
+  }
+  if (step.kind === "blocked") {
+    res.status(409).json({ status: "blocked", stage: step.stage, error: step.reason });
+    return;
+  }
+  if (step.kind === "awaiting_quality_review") {
+    res.json({ status: "awaiting_quality_review", checks: step.checks, package: packageData });
+    return;
+  }
+  if (step.kind === "awaiting_final_approval") {
+    res.json({ status: "awaiting_final_approval", package: packageData });
+    return;
+  }
+  if (step.kind === "production_ready") {
+    res.json({ status: "production_ready", package: packageData });
+    return;
+  }
+
+  const plan = createProductionStagePlan(packageData, step.stage);
+  await runProviderStage(project, res, plan.stage, plan.activeState, plan.agentKeys, plan.prompt, plan.validate, (result, output) => {
+    plan.commit(result, output);
+    project.state.stage = plan.readyState;
+  });
+});
+
 app.post("/api/projects/:projectId/production/stages/:stage/decision", (req: Request, res: Response) => {
   const project = projects.get(getParam(req.params.projectId));
   if (!project) {
@@ -1276,6 +1325,7 @@ app.post("/api/projects/:projectId/production/stages/:stage/decision", (req: Req
     packageData.qualityChecks[stage as typeof safetyFields[number]] = action === "approve" ? "human_approved" : "changes_requested";
   }
   if (stage === "humanApproval") packageData.qualityChecks.humanApproval = action === "approve" ? "approved" : "changes_requested";
+  if (stage === "humanApproval" && action === "approve") project.state.stage = "production_ready";
   project.updated_at = Date.now();
   const event = broadcastEvent(project, "production.stage_decided", { stage, action, feedback: String(feedback).slice(0, 4000) });
   res.json({ status: "recorded", event, package: packageData });
