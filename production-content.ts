@@ -169,6 +169,11 @@ export function numberValue(value: unknown, field: string): number {
   return value;
 }
 
+export function nonNegativeNumberValue(value: unknown, field: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) throw new Error(`Invalid structured output: ${field} must be a non-negative number`);
+  return value;
+}
+
 export function objectValue(value: unknown, field: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`Invalid structured output: ${field} must be an object`);
   return value as Record<string, any>;
@@ -273,7 +278,7 @@ export function validateVoiceMusicPlan(value: unknown): VoiceMusicPlan {
       const track = objectValue(item, `${field}[${index}]`);
       const output: Record<string, any> = { id: `track-${String(index + 1).padStart(2, "0")}` };
       for (const key of keys) output[key] = key === "timingSeconds"
-        ? numberValue(track[key], `${field}[${index}].${key}`)
+        ? nonNegativeNumberValue(track[key], `${field}[${index}].${key}`)
         : requiredString(track[key], `${field}[${index}].${key}`);
       return output;
     });

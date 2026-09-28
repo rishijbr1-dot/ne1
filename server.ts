@@ -1255,6 +1255,12 @@ app.post("/api/projects/:projectId/production/stages/:stage/decision", (req: Req
     return;
   }
   if (stage === "humanApproval" && action === "approve") {
+    const unapprovedContent = generatedStages.filter((contentStage) =>
+      packageData.stageStatuses[contentStage] !== "generated" || packageData.approvalState[contentStage]?.status !== "approved");
+    if (unapprovedContent.length > 0) {
+      res.status(409).json({ error: `Human approval requires generated and approved content stages: ${unapprovedContent.join(", ")}.` });
+      return;
+    }
     const requiredChecks = ["educationalQuality", "ageSuitability", "factualReview", "copyrightSourceReview"] as const;
     const outstanding = requiredChecks.filter((check) => packageData.qualityChecks[check] !== "human_approved");
     if (outstanding.length > 0) {

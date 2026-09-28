@@ -1341,7 +1341,7 @@
       }
       const body = await response.json().catch(() => ({error: response.statusText}));
       if (!response.ok) {
-        const error = new Error(body.error || response.statusText);
+        const error = new Error(body.message || body.error || response.statusText);
         error.status = response.status;
         throw error;
       }
