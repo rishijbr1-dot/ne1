@@ -18,8 +18,8 @@ export interface TextGenerationProvider {
 export class ProviderUnavailableError extends Error {
   readonly code: ProviderErrorCode = "provider_unavailable";
 
-  constructor() {
-    super("No content generation provider is configured. Set GEMINI_API_KEY in the server environment to enable generation.");
+  constructor(apiKeyEnv = "GEMINI_API_KEY") {
+    super(`No content generation provider is configured. Set ${apiKeyEnv} in the server environment to enable generation.`);
   }
 }
 

@@ -1,7 +1,11 @@
 import { GeminiProvider } from "./gemini.js";
+import { OpenAIProvider } from "./openai.js";
 import { ProviderGenerationError, type TextGenerationProvider } from "./types.js";
 
-const providers = new Map<string, TextGenerationProvider>([["gemini", new GeminiProvider()]]);
+const providers = new Map<string, TextGenerationProvider>([
+  ["gemini", new GeminiProvider()],
+  ["openai", new OpenAIProvider()],
+]);
 
 export const DEFAULT_CONTENT_PROVIDER = "gemini";
 
