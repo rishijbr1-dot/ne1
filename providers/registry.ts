@@ -1,3 +1,4 @@
+import { AnthropicProvider } from "./anthropic.js";
 import { GeminiProvider } from "./gemini.js";
 import { OpenAIProvider } from "./openai.js";
 import { ProviderGenerationError, type TextGenerationProvider } from "./types.js";
@@ -5,6 +6,7 @@ import { ProviderGenerationError, type TextGenerationProvider } from "./types.js
 const providers = new Map<string, TextGenerationProvider>([
   ["gemini", new GeminiProvider()],
   ["openai", new OpenAIProvider()],
+  ["anthropic", new AnthropicProvider()],
 ]);
 
 export const DEFAULT_CONTENT_PROVIDER = "gemini";
